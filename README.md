@@ -34,6 +34,21 @@ A black window appears and your browser opens at `http://localhost:4321`.
 **Leave the black window open** — that window *is* the app. Closing it stops the
 app. Your tasks are saved either way; they'll still be there next time.
 
+## Updating the published demo
+
+The website is served from a separate branch called `gh-pages`, which holds a
+copy of the `public/` folder. After changing anything in `public/`:
+
+```
+git add -A
+git commit -m "what changed"
+git push origin main
+git subtree push --prefix public origin gh-pages
+```
+
+The last line is the one that updates the website; the site refreshes about a
+minute later. Pushing to `main` alone updates the code but not the demo.
+
 ## Using it
 
 | Action | How |
