@@ -1,0 +1,11 @@
+# Your actual task data - this is yours, not part of the code.
+# Keeping it out means the repository holds the app, not its contents.
+todo.db
+todo.db-journal
+todo.db-wal
+todo.db-shm
+
+# Windows / editor noise
+Thumbs.db
+desktop.ini
+.DS_Store

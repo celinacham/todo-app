@@ -1,0 +1,420 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>To-do</title>
+<style>
+  /* --- AddVita brand fonts ------------------------------------------------
+     Served from this folder, so the app needs no internet connection.
+     Brand type hierarchy: titles in KoHo, everything else in Roboto.        */
+
+  @font-face {
+    font-family: 'KoHo';
+    src: url('/fonts/KoHo-Regular.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+  }
+  @font-face {
+    font-family: 'Roboto';
+    src: url('/fonts/Roboto-Variable.ttf') format('truetype');
+    font-weight: 100 900;
+    font-style: normal;
+    font-display: swap;
+  }
+  @font-face {
+    /* The brand's subheading weight, as its own file so it renders exactly. */
+    font-family: 'Roboto';
+    src: url('/fonts/Roboto-ExtraBold.ttf') format('truetype');
+    font-weight: 800;
+    font-style: normal;
+    font-display: swap;
+  }
+
+  /* --- AddVita brand palette ---------------------------------------------
+     Primary    #414288 indigo    #80A1D4 sky
+     Secondary  #682D63 plum      #FF8811 orange      #D6D6D6 grey         */
+
+  :root {
+    --indigo: #414288;
+    --sky:    #80A1D4;
+    --plum:   #682D63;
+    --orange: #FF8811;
+    --grey:   #D6D6D6;
+
+    --bg: #f4f4f7;
+    --surface: #ffffff;
+    --border: var(--grey);
+    --text: #23233a;
+    --muted: #6e6e85;
+    --primary: var(--indigo);
+    --primary-ink: #ffffff;
+    --primary-soft: #ecedf6;
+    --focus: var(--sky);
+    --accent: var(--orange);
+    --danger: var(--plum);
+    --shadow: 0 1px 2px rgba(65,66,136,.06), 0 8px 24px rgba(65,66,136,.07);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1a1a26;
+      --surface: #242433;
+      --border: #383850;
+      --text: #ececf2;
+      --muted: #9a9ab2;
+      /* Indigo is too dark to read on a dark background, so it lightens. */
+      --primary: #8f91d9;
+      --primary-ink: #1a1a26;
+      --primary-soft: #2d2d47;
+      --focus: var(--sky);
+      --accent: #ff9e3d;
+      --danger: #c77bbf;
+      --shadow: 0 1px 2px rgba(0,0,0,.35), 0 8px 24px rgba(0,0,0,.28);
+    }
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 3rem 1.25rem 5rem;
+    background: var(--bg);
+    color: var(--text);
+    font: 400 16px/1.55 'Roboto', system-ui, "Segoe UI", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 34rem; margin: 0 auto; }
+
+  header { margin-bottom: 1.75rem; }
+  .wordmark {
+    font-family: 'Roboto', system-ui, sans-serif;
+    font-weight: 800;
+    font-size: .7rem;
+    letter-spacing: .18em;
+    color: var(--sky);
+    margin-bottom: .35rem;
+  }
+  /* Brand title face: KoHo Regular. */
+  h1 {
+    margin: 0;
+    font-family: 'KoHo', 'Roboto', system-ui, sans-serif;
+    font-weight: 400;
+    font-size: 2.1rem;
+    line-height: 1.15;
+    color: var(--primary);
+  }
+  .sub { color: var(--muted); font-size: .875rem; margin-top: .35rem; }
+
+  form { display: flex; gap: .5rem; margin-bottom: 1.25rem; }
+  input[type=text] {
+    flex: 1; min-width: 0;
+    padding: .7rem .85rem;
+    font: inherit; color: var(--text);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: .55rem;
+    box-shadow: var(--shadow);
+  }
+  input[type=text]:focus {
+    outline: 2px solid var(--focus);
+    outline-offset: -1px;
+    border-color: transparent;
+  }
+  button {
+    font: inherit;
+    font-family: 'Roboto', system-ui, sans-serif;
+    border-radius: .55rem;
+    border: 1px solid transparent;
+    cursor: pointer;
+  }
+  button:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+  /* Brand subheading weight: Roboto ExtraBold. */
+  .add {
+    padding: .7rem 1.15rem;
+    background: var(--primary);
+    color: var(--primary-ink);
+    font-weight: 800;
+    letter-spacing: .02em;
+    box-shadow: var(--shadow);
+  }
+  .add:hover { background: var(--plum); }
+
+  .filters { display: flex; gap: .25rem; margin-bottom: .75rem; }
+  .filters button {
+    padding: .3rem .75rem;
+    font-size: .85rem;
+    font-weight: 500;
+    background: transparent;
+    color: var(--muted);
+    border-radius: 999px;
+  }
+  .filters button:hover { color: var(--primary); }
+  .filters button[aria-pressed=true] {
+    background: var(--primary-soft);
+    color: var(--primary);
+    font-weight: 800;
+  }
+
+  ul { list-style: none; margin: 0; padding: 0; display: grid; gap: .4rem; }
+  li {
+    display: flex; align-items: flex-start; gap: .7rem;
+    padding: .75rem .85rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: .6rem;
+    box-shadow: var(--shadow);
+  }
+  li input[type=checkbox] {
+    margin: .25rem 0 0;
+    width: 1.05rem; height: 1.05rem;
+    accent-color: var(--primary);
+    cursor: pointer; flex: none;
+  }
+  .title {
+    flex: 1;
+    overflow-wrap: anywhere;
+    cursor: text;
+    border-radius: .25rem;
+    padding: 0 .15rem;
+  }
+  .title:focus { outline: 2px solid var(--focus); }
+  li.done .title { text-decoration: line-through; color: var(--muted); }
+  .del {
+    flex: none;
+    padding: .1rem .45rem;
+    background: transparent;
+    color: var(--muted);
+    font-size: 1.15rem;
+    line-height: 1.2;
+  }
+  .del:hover { color: var(--danger); }
+
+  .empty { color: var(--muted); text-align: center; padding: 2.5rem 1rem; font-size: .925rem; }
+  footer {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-top: 1rem; color: var(--muted); font-size: .85rem;
+  }
+  /* The one place the brand orange appears - it stays sharp by being rare. */
+  .count-n { color: var(--accent); font-weight: 800; }
+  footer button { background: transparent; color: var(--muted); padding: .25rem .5rem; }
+  footer button:hover { color: var(--danger); }
+  .error {
+    background: var(--danger); color: #fff;
+    padding: .6rem .85rem; border-radius: .55rem;
+    margin-bottom: 1rem; font-size: .9rem;
+  }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="wordmark">ADDVITA</div>
+    <h1>To-do</h1>
+    <div class="sub">Saved automatically. Click any task to rename it.</div>
+  </header>
+
+  <div class="error" id="error" hidden></div>
+
+  <form id="add-form">
+    <input type="text" id="new-task" placeholder="What needs doing?" autocomplete="off" maxlength="500">
+    <button class="add" type="submit">Add</button>
+  </form>
+
+  <div class="filters" role="group" aria-label="Filter tasks">
+    <button type="button" data-filter="all"    aria-pressed="true">All</button>
+    <button type="button" data-filter="active" aria-pressed="false">To do</button>
+    <button type="button" data-filter="done"   aria-pressed="false">Done</button>
+  </div>
+
+  <ul id="list"></ul>
+  <div class="empty" id="empty" hidden></div>
+
+  <footer>
+    <span id="count"></span>
+    <button type="button" id="clear-done" hidden>Clear completed</button>
+  </footer>
+</div>
+
+<script>
+// The "front end" - everything you see and click.
+// It never touches the database directly; it asks the server to do that.
+
+const $ = (id) => document.getElementById(id);
+const listEl = $('list'), emptyEl = $('empty'), errorEl = $('error');
+const countEl = $('count'), clearBtn = $('clear-done'), inputEl = $('new-task');
+
+let tasks = [];
+let filter = 'all';
+
+function showError(message) {
+  errorEl.textContent = message;
+  errorEl.hidden = !message;
+}
+
+// One place that talks to the server, so errors are handled consistently.
+async function api(path, options = {}) {
+  const res = await fetch(path, {
+    headers: { 'Content-Type': 'application/json' },
+    ...options,
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || 'Could not reach the app.');
+  return data;
+}
+
+function render() {
+  const visible = tasks
+    .filter((t) =>
+      filter === 'active' ? !t.done : filter === 'done' ? t.done : true
+    )
+    // Same order the server uses: still-to-do first, newest first within each.
+    .sort((a, b) => (a.done - b.done) || (b.id - a.id));
+
+  listEl.replaceChildren(...visible.map(buildRow));
+
+  const remaining = tasks.filter((t) => !t.done).length;
+  const completed = tasks.length - remaining;
+
+  emptyEl.hidden = visible.length > 0;
+  emptyEl.textContent = tasks.length === 0
+    ? 'Nothing here yet. Add your first task above.'
+    : filter === 'done' ? 'Nothing completed yet.' : 'All done. Nice.';
+
+  // Built from elements rather than plain text so the number can carry the
+  // brand orange while the rest of the line stays muted.
+  countEl.replaceChildren();
+  if (tasks.length > 0) {
+    const number = document.createElement('span');
+    number.className = 'count-n';
+    number.textContent = String(remaining);
+    countEl.append(number, document.createTextNode(' to do · ' + completed + ' done'));
+  }
+  clearBtn.hidden = completed === 0;
+}
+
+function buildRow(task) {
+  const li = document.createElement('li');
+  li.className = task.done ? 'done' : '';
+
+  const check = document.createElement('input');
+  check.type = 'checkbox';
+  check.checked = task.done;
+  check.setAttribute('aria-label', 'Mark "' + task.title + '" as done');
+  check.addEventListener('change', () => save(task.id, { done: check.checked }));
+
+  // contenteditable lets you click the text and type, like a spreadsheet cell.
+  const title = document.createElement('span');
+  title.className = 'title';
+  title.textContent = task.title;
+  title.contentEditable = 'plaintext-only';
+  title.spellcheck = false;
+  title.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); title.blur(); }
+    if (e.key === 'Escape') { title.textContent = task.title; title.blur(); }
+  });
+  title.addEventListener('blur', () => {
+    const next = title.textContent.trim();
+    if (!next) { title.textContent = task.title; return; }   // refuse to blank it
+    if (next !== task.title) save(task.id, { title: next });
+  });
+
+  const del = document.createElement('button');
+  del.className = 'del';
+  del.type = 'button';
+  del.textContent = '×';
+  del.title = 'Delete';
+  del.setAttribute('aria-label', 'Delete "' + task.title + '"');
+  del.addEventListener('click', () => remove(task.id));
+
+  li.append(check, title, del);
+  return li;
+}
+
+// --- Actions -------------------------------------------------------------
+
+async function load() {
+  try {
+    tasks = await api('/api/todos');
+    showError('');
+  } catch (err) {
+    showError(err.message);
+  }
+  render();
+}
+
+async function add(title) {
+  try {
+    const created = await api('/api/todos', {
+      method: 'POST',
+      body: JSON.stringify({ title }),
+    });
+    tasks.unshift(created);
+    showError('');
+    render();
+  } catch (err) {
+    showError(err.message);
+  }
+}
+
+async function save(id, changes) {
+  try {
+    const updated = await api('/api/todos/' + id, {
+      method: 'PATCH',
+      body: JSON.stringify(changes),
+    });
+    tasks = tasks.map((t) => (t.id === id ? updated : t));
+    showError('');
+    render();
+  } catch (err) {
+    showError(err.message);
+    load();   // fall back to whatever the server actually has
+  }
+}
+
+async function remove(id) {
+  try {
+    await api('/api/todos/' + id, { method: 'DELETE' });
+    tasks = tasks.filter((t) => t.id !== id);
+    showError('');
+    render();
+  } catch (err) {
+    showError(err.message);
+  }
+}
+
+// --- Events --------------------------------------------------------------
+
+$('add-form').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const title = inputEl.value.trim();
+  if (!title) return;
+  inputEl.value = '';
+  add(title);
+});
+
+document.querySelectorAll('.filters button').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    filter = btn.dataset.filter;
+    document.querySelectorAll('.filters button').forEach((b) =>
+      b.setAttribute('aria-pressed', String(b === btn))
+    );
+    render();
+  });
+});
+
+clearBtn.addEventListener('click', async () => {
+  try {
+    await api('/api/todos/completed', { method: 'DELETE' });
+    tasks = tasks.filter((t) => !t.done);
+    showError('');
+    render();
+  } catch (err) {
+    showError(err.message);
+  }
+});
+
+load();
+</script>
+</body>
+</html>
