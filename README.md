@@ -3,6 +3,28 @@
 A small practice app. It works the same way a real business app works, just with
 much simpler data.
 
+**Live demo:** https://celinacham.github.io/todo-app/
+
+## Two ways this app runs
+
+The same screen works in two modes, and it tells you which one you're in.
+
+| | On your machine | The published demo |
+|---|---|---|
+| Started by | `start-todo-app.bat` | Just a link |
+| Data lives in | `todo.db`, a real database | The visitor's own browser |
+| Shared between people | Not yet | No — each visitor has their own |
+| Purpose | The actual app | Something to click and comment on |
+
+When the page loads it asks whether the engine is there. If it answers, the real
+database is used. If it doesn't — as on the demo — the page falls back to
+browser storage and says so on screen, rather than quietly pretending the data
+went somewhere.
+
+That fallback exists because GitHub Pages can only serve files; it can't keep a
+program running. Any version of this that several people share will need the
+engine hosted somewhere.
+
 ## Running it
 
 Double-click **start-todo-app.bat**.

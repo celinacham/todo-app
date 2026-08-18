@@ -11,14 +11,14 @@
 
   @font-face {
     font-family: 'KoHo';
-    src: url('/fonts/KoHo-Regular.ttf') format('truetype');
+    src: url('fonts/KoHo-Regular.ttf') format('truetype');
     font-weight: 400;
     font-style: normal;
     font-display: swap;
   }
   @font-face {
     font-family: 'Roboto';
-    src: url('/fonts/Roboto-Variable.ttf') format('truetype');
+    src: url('fonts/Roboto-Variable.ttf') format('truetype');
     font-weight: 100 900;
     font-style: normal;
     font-display: swap;
@@ -26,7 +26,7 @@
   @font-face {
     /* The brand's subheading weight, as its own file so it renders exactly. */
     font-family: 'Roboto';
-    src: url('/fonts/Roboto-ExtraBold.ttf') format('truetype');
+    src: url('fonts/Roboto-ExtraBold.ttf') format('truetype');
     font-weight: 800;
     font-style: normal;
     font-display: swap;
@@ -203,6 +203,17 @@
     padding: .6rem .85rem; border-radius: .55rem;
     margin-bottom: 1rem; font-size: .9rem;
   }
+  /* Shown only on the published demo, where there is no database. */
+  .demo-note {
+    background: var(--primary-soft);
+    color: var(--text);
+    padding: .7rem .9rem;
+    border-radius: .55rem;
+    margin-bottom: 1.25rem;
+    font-size: .85rem;
+    line-height: 1.5;
+  }
+  .demo-note strong { color: var(--primary); font-weight: 800; }
   [hidden] { display: none !important; }
 </style>
 </head>
@@ -211,8 +222,14 @@
   <header>
     <div class="wordmark">ADDVITA</div>
     <h1>To-do</h1>
-    <div class="sub">Saved automatically. Click any task to rename it.</div>
+    <div class="sub" id="sub-text">Saved automatically. Click any task to rename it.</div>
   </header>
+
+  <div class="demo-note" id="demo-note" hidden>
+    <strong>Demo.</strong> There's no database behind this page, so your tasks
+    are kept in this browser only &mdash; they won't be visible to anyone else.
+    The full version runs on a machine with its own database.
+  </div>
 
   <div class="error" id="error" hidden></div>
 
@@ -252,7 +269,18 @@ function showError(message) {
   errorEl.hidden = !message;
 }
 
-// One place that talks to the server, so errors are handled consistently.
+// --- Where the tasks are kept -------------------------------------------
+// Two options with identical shapes, so nothing below has to know which is
+// in use:
+//
+//   serverStore - the real one. Talks to server.js, which owns the SQLite
+//                 database. This is what runs on your machine.
+//   browserStore - a stand-in for the published demo, where there is no
+//                 server to talk to. Tasks live in the visitor's own browser.
+//
+// Paths have no leading slash so they work whether the app sits at the root
+// of localhost or in a subfolder on a website.
+
 async function api(path, options = {}) {
   const res = await fetch(path, {
     headers: { 'Content-Type': 'application/json' },
@@ -262,6 +290,69 @@ async function api(path, options = {}) {
   if (!res.ok) throw new Error(data.error || 'Could not reach the app.');
   return data;
 }
+
+const serverStore = {
+  kind: 'server',
+  list: () => api('api/todos'),
+  add: (title) => api('api/todos', { method: 'POST', body: JSON.stringify({ title }) }),
+  update: (id, changes) =>
+    api('api/todos/' + id, { method: 'PATCH', body: JSON.stringify(changes) }),
+  remove: (id) => api('api/todos/' + id, { method: 'DELETE' }),
+  clearDone: () => api('api/todos/completed', { method: 'DELETE' }),
+};
+
+const browserStore = {
+  kind: 'browser',
+  KEY: 'addvita-todo',
+
+  read() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(this.KEY));
+      return Array.isArray(saved) ? saved : [];
+    } catch {
+      return [];   // corrupt or blocked storage - start empty rather than break
+    }
+  },
+  write(rows) {
+    try {
+      localStorage.setItem(this.KEY, JSON.stringify(rows));
+    } catch {
+      throw new Error('This browser is not allowing the demo to save.');
+    }
+    return rows;
+  },
+  nextId(rows) {
+    return rows.reduce((max, r) => Math.max(max, r.id), 0) + 1;
+  },
+
+  async list() {
+    return this.read();
+  },
+  async add(title) {
+    const rows = this.read();
+    const task = { id: this.nextId(rows), title, done: false };
+    this.write([task, ...rows]);
+    return task;
+  },
+  async update(id, changes) {
+    const rows = this.read();
+    const task = rows.find((r) => r.id === id);
+    if (!task) throw new Error('No task with that id.');
+    Object.assign(task, changes);
+    this.write(rows);
+    return task;
+  },
+  async remove(id) {
+    this.write(this.read().filter((r) => r.id !== id));
+    return { ok: true };
+  },
+  async clearDone() {
+    this.write(this.read().filter((r) => !r.done));
+    return { ok: true };
+  },
+};
+
+let store = serverStore;
 
 function render() {
   const visible = tasks
@@ -335,7 +426,7 @@ function buildRow(task) {
 
 async function load() {
   try {
-    tasks = await api('/api/todos');
+    tasks = await store.list();
     showError('');
   } catch (err) {
     showError(err.message);
@@ -345,10 +436,7 @@ async function load() {
 
 async function add(title) {
   try {
-    const created = await api('/api/todos', {
-      method: 'POST',
-      body: JSON.stringify({ title }),
-    });
+    const created = await store.add(title);
     tasks.unshift(created);
     showError('');
     render();
@@ -359,10 +447,7 @@ async function add(title) {
 
 async function save(id, changes) {
   try {
-    const updated = await api('/api/todos/' + id, {
-      method: 'PATCH',
-      body: JSON.stringify(changes),
-    });
+    const updated = await store.update(id, changes);
     tasks = tasks.map((t) => (t.id === id ? updated : t));
     showError('');
     render();
@@ -374,7 +459,7 @@ async function save(id, changes) {
 
 async function remove(id) {
   try {
-    await api('/api/todos/' + id, { method: 'DELETE' });
+    await store.remove(id);
     tasks = tasks.filter((t) => t.id !== id);
     showError('');
     render();
@@ -405,7 +490,7 @@ document.querySelectorAll('.filters button').forEach((btn) => {
 
 clearBtn.addEventListener('click', async () => {
   try {
-    await api('/api/todos/completed', { method: 'DELETE' });
+    await store.clearDone();
     tasks = tasks.filter((t) => !t.done);
     showError('');
     render();
@@ -414,7 +499,26 @@ clearBtn.addEventListener('click', async () => {
   }
 });
 
-load();
+// --- Start up ------------------------------------------------------------
+// Ask the server whether it's there. If it answers, use the real database.
+// If it doesn't, this is the published demo, so fall back to the browser and
+// say so plainly rather than pretending the data is going somewhere.
+
+async function start() {
+  try {
+    // A plain GET, because that is what server.js actually answers.
+    const res = await fetch('api/todos');
+    if (!res.ok) throw new Error('no server');
+    if (!Array.isArray(await res.json())) throw new Error('not our server');
+  } catch {
+    store = browserStore;
+    $('demo-note').hidden = false;
+    $('sub-text').textContent = 'Click any task to rename it.';
+  }
+  load();
+}
+
+start();
 </script>
 </body>
 </html>
